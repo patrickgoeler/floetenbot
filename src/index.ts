@@ -34,7 +34,9 @@ client.on("message", async (message) => {
       message.channel.send(`Los geht's mit ${item.snippet.title}`)
 
       // Always remember to handle errors appropriately!
-      dispatcher.on("error", console.error)
+      dispatcher.on("error", (error) => {
+        throw new Error(error.message)
+      })
     } catch (error) {
       console.error(error)
       return message.channel.send("Irgendwas ist schief gegangen lol")
