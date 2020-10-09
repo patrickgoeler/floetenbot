@@ -4,6 +4,8 @@
     "editor.formatOnSave": false,
     "editor.codeActionsOnSave": {
       "source.fixAll": true
-    }
-  }
+    },
+    
+  },
+  "typescript.preferences.importModuleSpecifier": "relative"
 }
