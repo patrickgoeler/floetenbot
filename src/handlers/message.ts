@@ -1,5 +1,5 @@
 import Discord from "discord.js"
-import { leave, play, stop } from "../commands/message"
+import { leave, skip, start, stop } from "../commands/message"
 import { PREFIX } from "../config"
 import logger from "../utils/logger"
 
@@ -11,7 +11,8 @@ export async function onMessage(message: Discord.Message): Promise<any> {
   const command = args.shift()?.toLowerCase()
 
   if (command === "play") {
-    await play(message, args)
+    logger.info("command play")
+    await start(message, args)
   }
 
   if (command === "stop") {
@@ -20,5 +21,9 @@ export async function onMessage(message: Discord.Message): Promise<any> {
 
   if (command === "leave") {
     await leave(message)
+  }
+
+  if (command === "skip") {
+    await skip(message)
   }
 }

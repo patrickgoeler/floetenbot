@@ -15,5 +15,7 @@ module.exports = {
     // e.g. "@typescript-eslint/explicit-function-return-type": "off",
     "import/prefer-default-export": "off",
     "no-console": "off",
+    "import/no-cycle": "off",
+    "@typescript-eslint/no-use-before-define": "off",
   },
 }
