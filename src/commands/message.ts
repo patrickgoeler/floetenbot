@@ -39,6 +39,7 @@ export async function start(message: Discord.Message, args: string[]) {
     store.set(message.guild.id, newServer)
     try {
       const connection = await voiceChannel.join()
+      connection.voice.setSelfDeaf(true)
       newServer.connection = connection
       await play(message.guild.id, song)
     } catch (error) {
