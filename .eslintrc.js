@@ -17,5 +17,6 @@ module.exports = {
     "no-console": "off",
     "import/no-cycle": "off",
     "@typescript-eslint/no-use-before-define": "off",
+    "no-plusplus": "off",
   },
 }

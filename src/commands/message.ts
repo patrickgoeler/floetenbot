@@ -120,3 +120,52 @@ export async function leave(message: Discord.Message) {
     await message.react("👋")
   }
 }
+
+export async function queue(message: Discord.Message) {
+  const server = store.get(message.guild?.id as string)
+  if (!server) {
+    await message.channel.send("Grade läuft doch gar nichts")
+  } else if (server.songs.length === 0) {
+    await message.channel.send("Nichts in der queue")
+  } else {
+    const fields = [{ name: "Aktueller Titel", value: `1) ${server.songs[0].title}` }]
+    if (server.songs.length > 1) {
+      const text = server.songs
+        .slice(1)
+        .map((song, index) => `${index + 2}) ${song.title}`)
+        .join("\n")
+      fields.push({ name: "Nächste Titel", value: text })
+    }
+    const queueMessage = new Discord.MessageEmbed()
+      .setColor("#0099ff")
+      .setTitle("Queue")
+      .setDescription("Du kannst '_jump X' benutzen um zur Nummer X zu skippen")
+      .addFields(...fields)
+      .setTimestamp()
+      .setFooter("Flötenbot bester Bot")
+    await message.channel.send(queueMessage)
+  }
+}
+
+export async function jump(message: Discord.Message, args: string[]) {
+  const server = store.get(message.guild?.id as string)
+  const position = Number(args[0])
+  if (!server) {
+    await message.channel.send("Grade läuft doch gar nichts")
+  } else if (server.songs.length === 0) {
+    await message.channel.send("Nichts in der queue")
+  } else if (args.length > 1) {
+    await message.channel.send("Nur 1 Paramter (jump position) du Mongo")
+  } else if (!position || position < 0) {
+    await message.channel.send("Du musst auch eine valide Nummer angeben du Mongo")
+  } else if (position === 1) {
+    await message.channel.send("Das Lied läuft doch schon du Mongo")
+  } else if (position > server.songs.length) {
+    await message.channel.send("So viele Lieder sind gar nicht in der Queue du Mongo")
+  } else {
+    // one queue element is removed on dispatcher end
+    // so if we only jump one ahead it splices (0, 0) and it is handled like a skip
+    server.songs.splice(0, position - 2)
+    server.connection?.dispatcher.end()
+  }
+}
