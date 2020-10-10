@@ -70,6 +70,7 @@ export async function play(guildId: string, song: Song) {
     return
   }
   const stream = ytdl(song.url, {
+    quality: "highestaudio",
     opusEncoded: true,
     encoderArgs: ["-af", "bass=g=25,dynaudnorm=f=200"],
   })
