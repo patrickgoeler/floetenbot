@@ -1,9 +1,13 @@
 import axios from "axios"
+import ytdl from "discord-ytdl-core"
 import { GOOGLE_TOKEN } from "../config"
 import { Item, YoutubeSearchResult } from "../types/youtube"
+import { Song } from ".."
+import logger from "../utils/logger"
 
 export async function getVideoUrl(query: string): Promise<Item> {
   try {
+    logger.info(query)
     const { data } = await axios.get<YoutubeSearchResult>(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURI(query)}&key=${GOOGLE_TOKEN}`,
     )
@@ -13,7 +17,24 @@ export async function getVideoUrl(query: string): Promise<Item> {
     }
     throw new Error("No items")
   } catch (error) {
-    console.log(error)
+    logger.error(error)
+    throw new Error(error)
+  }
+}
+
+export async function getVideoInfo(url: string): Promise<Song> {
+  try {
+    const data = await ytdl.getInfo(url)
+    if (!data) {
+      throw new Error("No item")
+    }
+    const song: Song = {
+      url: data.videoDetails.video_url,
+      title: data.videoDetails.title,
+    }
+    return song
+  } catch (error) {
+    logger.error(error)
     throw new Error(error)
   }
 }

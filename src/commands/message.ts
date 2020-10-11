@@ -1,12 +1,14 @@
 import Discord from "discord.js"
 // import ytdl from "ytdl-core-discord"
 import ytdl from "discord-ytdl-core"
-import { getVideoUrl } from "../api/youtube"
+import { getVideoInfo, getVideoUrl } from "../api/youtube"
 import logger from "../utils/logger"
 import { Server, Song, store } from ".."
+import { getSongQueries } from "../api/spotify"
 
 export async function start(message: Discord.Message, args: string[]) {
   message.channel.startTyping()
+
   if (args.length === 0) {
     await message.channel.send("Gib 2. Parameter du Mongo")
     return
@@ -17,21 +19,50 @@ export async function start(message: Discord.Message, args: string[]) {
     return
   }
   if (!message.guild) {
-    await message.channel.send("Guild not defined")
+    await message.channel.send("Gilde nicht definiert")
     return
   }
-  const item = await getVideoUrl(args.join(" "))
-  const song: Song = {
-    title: item.snippet.title,
-    url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+  // eslint-disable-next-line no-useless-escape
+  const urlRegex = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)?/gi
+
+  let songs: Song[] = []
+
+  try {
+    if (args[0].match(new RegExp(urlRegex))) {
+      // handle link
+      if (args[0].includes("spotify")) {
+        // handle spotify
+        const titles = await getSongQueries(args[0])
+        songs = [...titles.map((t) => ({ title: t }))]
+      } else if (args[0].includes("youtube")) {
+        // play link directly
+        const song = await getVideoInfo(args[0])
+        songs.push(song)
+      } else {
+        await message.channel.send("Nur Youtube Links werden unterstützt du Mongo")
+        return
+      }
+    } else {
+      // normal search terms
+      const item = await getVideoUrl(args.join(" "))
+      const song: Song = {
+        title: item.snippet.title,
+        url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+      }
+      songs.push(song)
+    }
+  } catch (error) {
+    logger.error(error)
+    await message.channel.send("Evtl. ist die Youtube API Quota überstiegen")
   }
+
   const server = store.get(message.guild.id)
 
   if (!server) {
     // new server
     const newServer: Server = {
       id: message.guild.id,
-      songs: [song],
+      songs,
       connection: null,
       voiceChannel,
       textChannel: message.channel,
@@ -41,7 +72,7 @@ export async function start(message: Discord.Message, args: string[]) {
       const connection = await voiceChannel.join()
       connection.voice.setSelfDeaf(true)
       newServer.connection = connection
-      await play(message.guild.id, song)
+      await play(message.guild.id, songs[0])
     } catch (error) {
       logger.error(error)
       store.delete(message.guild.id)
@@ -49,8 +80,12 @@ export async function start(message: Discord.Message, args: string[]) {
     }
   } else {
     // just add song to queue
-    server.songs.push(song)
-    message.channel.send(`${song.title} ist jetzt in der queue`)
+    server.songs = [...server.songs, ...songs]
+    if (songs.length > 1) {
+      message.channel.send(`${songs.map((s) => s.title).join(", ")} sind jetzt in der queue`)
+    } else {
+      message.channel.send(`${songs[0].title} ist jetzt in der queue`)
+    }
   }
   message.channel.stopTyping()
 }
@@ -69,6 +104,10 @@ export async function play(guildId: string, song: Song) {
   if (!server.connection) {
     // not in voice channel
     return
+  }
+  if (!song.url) {
+    const item = await getVideoUrl(song.title)
+    song.url = `https://www.youtube.com/watch?v=${item.id.videoId}`
   }
   const stream = ytdl(song.url, {
     quality: "highestaudio",
@@ -121,6 +160,37 @@ export async function leave(message: Discord.Message) {
   }
 }
 
+export async function queueFull(message: Discord.Message) {
+  const server = store.get(message.guild?.id as string)
+  if (!server) {
+    await message.channel.send("Grade läuft doch gar nichts")
+  } else if (server.songs.length === 0) {
+    await message.channel.send("Nichts in der queue")
+  } else {
+    const fields: Discord.EmbedFieldData[] = [{ name: "Aktueller Titel", value: `1) ${server.songs[0].title}` }]
+    if (server.songs.length > 1) {
+      let text = ""
+      for (let i = 1; i < server.songs.length; i++) {
+        const song = server.songs[i]
+        const songTitle = `${i + 1}) ${song.title}`
+        text += `${songTitle}\n`
+        if (i % 9 === 0) {
+          fields.push({ name: `Tracks ${i - 7} bis ${i + 1}`, value: text })
+          text = ""
+        }
+      }
+    }
+    const queueMessage = new Discord.MessageEmbed()
+      .setColor("#0099ff")
+      .setTitle("Ganze Queue")
+      .setDescription("Du kannst '_jump X' benutzen um zur Nummer X zu skippen")
+      .addFields(...fields)
+      .setTimestamp()
+      .setFooter("Flötenbot bester Bot")
+    await message.channel.send(queueMessage)
+  }
+}
+
 export async function queue(message: Discord.Message) {
   const server = store.get(message.guild?.id as string)
   if (!server) {
@@ -128,17 +198,24 @@ export async function queue(message: Discord.Message) {
   } else if (server.songs.length === 0) {
     await message.channel.send("Nichts in der queue")
   } else {
-    const fields = [{ name: "Aktueller Titel", value: `1) ${server.songs[0].title}` }]
+    const fields: Discord.EmbedFieldData[] = [{ name: "Aktueller Titel", value: `1) ${server.songs[0].title}` }]
     if (server.songs.length > 1) {
-      const text = server.songs
-        .slice(1)
-        .map((song, index) => `${index + 2}) ${song.title}`)
-        .join("\n")
-      fields.push({ name: "Nächste Titel", value: text })
+      let text = ""
+      for (let i = 1; i < server.songs.length; i++) {
+        const song = server.songs[i]
+        const songTitle = `${i + 1}) ${song.title}`
+        text += `${songTitle}\n`
+        if (i % 9 === 0) {
+          text += `...\nTotal: ${server.songs.length}`
+          fields.push({ name: `Tracks ${i - 7} bis ${i + 1}`, value: text })
+          text = ""
+          break
+        }
+      }
     }
     const queueMessage = new Discord.MessageEmbed()
       .setColor("#0099ff")
-      .setTitle("Queue")
+      .setTitle("Kurze Queue")
       .setDescription("Du kannst '_jump X' benutzen um zur Nummer X zu skippen")
       .addFields(...fields)
       .setTimestamp()

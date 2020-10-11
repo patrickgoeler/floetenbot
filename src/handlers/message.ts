@@ -1,5 +1,5 @@
 import Discord from "discord.js"
-import { jump, leave, queue, skip, start, stop } from "../commands/message"
+import { jump, leave, queue, queueFull, skip, start, stop } from "../commands/message"
 import { PREFIX } from "../config"
 import logger from "../utils/logger"
 
@@ -24,6 +24,10 @@ export async function onMessage(message: Discord.Message): Promise<any> {
 
   if (command === "skip") {
     await skip(message)
+  }
+
+  if (command === "queue_full") {
+    await queueFull(message)
   }
 
   if (command === "queue") {

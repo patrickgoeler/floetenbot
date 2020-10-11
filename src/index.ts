@@ -12,7 +12,7 @@ export interface Server {
 }
 
 export interface Song {
-  url: string
+  url?: string
   title: string
 }
 

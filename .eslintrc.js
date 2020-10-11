@@ -18,5 +18,7 @@ module.exports = {
     "import/no-cycle": "off",
     "@typescript-eslint/no-use-before-define": "off",
     "no-plusplus": "off",
+    "no-await-in-loop": "off",
+    "no-param-reassign": "off",
   },
 }
