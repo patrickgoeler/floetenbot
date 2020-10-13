@@ -113,8 +113,7 @@ export async function play(guildId: string, song: Song) {
     filter: "audioonly",
     opusEncoded: true,
     highWaterMark: 50,
-    encoderArgs: ["-af", "bass=g=20"],
-    // encoderArgs: ["-af", "bass=g=20,dynaudnorm=f=200"],
+    encoderArgs: ["-af", "bass=g=15,dynaudnorm=f=200"],
   })
   server.connection
     .play(stream, {
