@@ -120,8 +120,8 @@ export async function play(guildId: string, song: Song) {
   }
   if (!song) {
     // queue empty
-    // server?.voiceChannel?.leave()
-    // store.delete(guildId)
+    server?.voiceChannel?.leave()
+    store.delete(guildId)
     return
   }
   if (!server.connection) {
