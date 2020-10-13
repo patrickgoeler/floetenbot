@@ -110,8 +110,10 @@ export async function play(guildId: string, song: Song) {
     song.url = `https://www.youtube.com/watch?v=${item.id.videoId}`
   }
   const stream = ytdl(song.url, {
-    quality: "highestaudio",
+    filter: "audioonly",
     opusEncoded: true,
+    quality: "highestaudio",
+    highWaterMark: 33554432,
     encoderArgs: ["-af", "bass=g=15,dynaudnorm=f=200"],
   })
   server.connection
