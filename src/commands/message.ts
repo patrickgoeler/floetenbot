@@ -112,7 +112,7 @@ export async function play(guildId: string, song: Song) {
   const stream = ytdl(song.url, {
     filter: "audioonly",
     opusEncoded: true,
-    highWaterMark: 50,
+    highWaterMark: 33554432,
     encoderArgs: ["-af", "bass=g=15,dynaudnorm=f=200"],
   })
   server.connection
