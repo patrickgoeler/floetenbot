@@ -4,22 +4,31 @@ import ytdl from "discord-ytdl-core"
 import { getVideoInfo, getVideoUrl } from "../api/youtube"
 import logger from "../utils/logger"
 import { Server, Song, store } from ".."
-import { getSongQueries } from "../api/spotify"
+import { getSongQueries, searchForTrack } from "../api/spotify"
 
 export async function start(message: Discord.Message, args: string[]) {
   message.channel.startTyping()
 
-  if (args.length === 0) {
-    await message.channel.send("Gib 2. Parameter du Mongo")
-    return
-  }
   const voiceChannel = message.member?.voice.channel
   if (!voiceChannel) {
     await message.channel.send("Du befindest dich nicht in einem Voice Channel du Mongo")
+    message.channel.stopTyping()
     return
   }
   if (!message.guild) {
     await message.channel.send("Gilde nicht definiert")
+    message.channel.stopTyping()
+    return
+  }
+
+  const server = store.get(message.guild.id)
+  if (args.length === 0) {
+    if (server && server.connection && server.connection.dispatcher) {
+      server.connection.dispatcher.resume()
+    } else {
+      await message.channel.send("Gib 2. Parameter du Mongo")
+    }
+    message.channel.stopTyping()
     return
   }
   // eslint-disable-next-line no-useless-escape
@@ -40,6 +49,7 @@ export async function start(message: Discord.Message, args: string[]) {
         songs.push(song)
       } else {
         await message.channel.send("Nur Youtube Links werden unterstützt du Mongo")
+        message.channel.stopTyping()
         return
       }
     } else {
@@ -55,8 +65,6 @@ export async function start(message: Discord.Message, args: string[]) {
     logger.error(error)
     await message.channel.send("Evtl. ist die Youtube API Quota überstiegen")
   }
-
-  const server = store.get(message.guild.id)
 
   if (!server) {
     // new server
@@ -97,8 +105,8 @@ export async function play(guildId: string, song: Song) {
   }
   if (!song) {
     // queue empty
-    server?.voiceChannel?.leave()
-    store.delete(guildId)
+    // server?.voiceChannel?.leave()
+    // store.delete(guildId)
     return
   }
   if (!server.connection) {
@@ -107,6 +115,7 @@ export async function play(guildId: string, song: Song) {
   }
   if (!song.url) {
     const item = await getVideoUrl(song.title)
+    song.title = item.snippet.title
     song.url = `https://www.youtube.com/watch?v=${item.id.videoId}`
   }
   const stream = ytdl(song.url, {
@@ -120,8 +129,22 @@ export async function play(guildId: string, song: Song) {
       type: "opus",
       highWaterMark: 50,
     })
-    .on("finish", () => {
+    .on("finish", async () => {
       server.songs.shift()
+      if (!server.songs[0] && server.connection) {
+        console.log("getting recommends because last song")
+        const recommendations = await searchForTrack(song.title)
+        if (!recommendations) {
+          logger.error("Failed to get recommendations")
+        } else {
+          console.log(recommendations)
+          for (let i = 0; i < recommendations.length; i++) {
+            const recommendation = recommendations[i]
+            server.songs.push({ title: `${recommendation.artists![0].name} - ${recommendation.name}` })
+          }
+          await server.textChannel.send(`Auto play: ${recommendations.length} neue Lieder sind in der Schlange`)
+        }
+      }
       play(guildId, server.songs[0])
     })
     .on("error", (error) => logger.error(error))
@@ -134,8 +157,11 @@ export async function stop(message: Discord.Message) {
     return
   }
   const server = store.get(message.guild?.id as string) as Server
-  server.songs = []
-  server.connection?.dispatcher.end()
+  // server.songs = []
+  // await server.voiceChannel.leave()
+  // store.delete(message.guild?.id as string)
+  server.connection?.dispatcher.pause()
+  await message.react("⏸")
 }
 
 export async function skip(message: Discord.Message) {
@@ -155,6 +181,7 @@ export async function skip(message: Discord.Message) {
 export async function leave(message: Discord.Message) {
   const server = store.get(message.guild?.id as string) as Server
   if (server.voiceChannel) {
+    store.delete(message.guild?.id as string)
     await server.voiceChannel.leave()
     await message.react("👋")
   }

@@ -41,6 +41,7 @@ export interface ArtistsEntity {
   name: string
   type: string
   uri: string
+  genres?: string[]
 }
 export interface ExternalUrls {
   spotify: string

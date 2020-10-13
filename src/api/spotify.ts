@@ -1,7 +1,7 @@
 import axios from "axios"
 import qs from "querystring"
 import { SPOTIFY_ENCODED_AUTH } from "../config"
-import { Album, Playlist, TopTracks, Track } from "../types/spotify"
+import { Album, ArtistsEntity, Playlist, TopTracks, Track } from "../types/spotify"
 import logger from "../utils/logger"
 
 export async function getToken(): Promise<string | null> {
@@ -117,4 +117,36 @@ export async function getPlaylistQuery(url: string, token: string): Promise<stri
     titles.push(title)
   }
   return titles
+}
+
+export async function searchForTrack(query: string): Promise<Track[] | null> {
+  if (query.includes("(")) {
+    // eslint-disable-next-line prefer-destructuring
+    query = query.split("(")[0]
+  }
+  const token = await getToken()
+  const { data } = await axios.get<{ tracks: { items: Track[] } }>(
+    `https://api.spotify.com/v1/search/?q=${encodeURI(query)}&type=track&limit=1`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  )
+  // first one should be the best match
+  const track = data.tracks.items[0]
+  if (!track || !track.artists) return null
+  const artistId = track.artists[0].id
+  const { data: artistDetail } = await axios.get<ArtistsEntity>(`https://api.spotify.com/v1/artists/${artistId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const { genres } = artistDetail
+  if (!genres) return null
+  const { data: recommended } = await axios.get<{ tracks: Track[] }>(
+    `https://api.spotify.com/v1/recommendations?limit=10&market=DE&seed_artists=${artistId}&seed_genres=${encodeURI(
+      genres.join(",").slice(0, 5),
+    )}&seed_tracks=${track.id}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  )
+  return recommended.tracks
 }
