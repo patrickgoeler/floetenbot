@@ -133,16 +133,20 @@ export async function play(guildId: string, song: Song) {
       server.songs.shift()
       if (!server.songs[0] && server.connection) {
         console.log("getting recommends because last song")
-        const recommendations = await searchForTrack(song.title)
-        if (!recommendations) {
-          logger.error("Failed to get recommendations")
-        } else {
-          console.log(recommendations)
-          for (let i = 0; i < recommendations.length; i++) {
-            const recommendation = recommendations[i]
-            server.songs.push({ title: `${recommendation.artists![0].name} - ${recommendation.name}` })
+        try {
+          const recommendations = await searchForTrack(song.title)
+
+          if (!recommendations) {
+            await server.textChannel.send(`Ich habe leider keine Auto play Vorschläge für ${song.title} gefunden`)
+          } else {
+            for (let i = 0; i < recommendations.length; i++) {
+              const recommendation = recommendations[i]
+              server.songs.push({ title: `${recommendation.artists![0].name} - ${recommendation.name}` })
+            }
+            await server.textChannel.send(`Auto play: ${recommendations.length} neue Lieder sind in der Schlange`)
           }
-          await server.textChannel.send(`Auto play: ${recommendations.length} neue Lieder sind in der Schlange`)
+        } catch (error) {
+          logger.error(error)
         }
       }
       play(guildId, server.songs[0])
@@ -157,9 +161,18 @@ export async function stop(message: Discord.Message) {
     return
   }
   const server = store.get(message.guild?.id as string) as Server
-  // server.songs = []
-  // await server.voiceChannel.leave()
-  // store.delete(message.guild?.id as string)
+  server.songs = []
+  await server.voiceChannel.leave()
+  store.delete(message.guild?.id as string)
+  await message.react("🟥")
+}
+
+export async function pause(message: Discord.Message) {
+  if (!message.member?.voice.channel) {
+    await message.channel.send("Du befindest dich nicht in einem Voice Channel du Mongo")
+    return
+  }
+  const server = store.get(message.guild?.id as string) as Server
   server.connection?.dispatcher.pause()
   await message.react("⏸")
 }
