@@ -175,8 +175,10 @@ export async function queueFull(message: Discord.Message) {
         const songTitle = `${i + 1}) ${song.title}`
         text += `${songTitle}\n`
         if (i % 9 === 0) {
-          fields.push({ name: `Tracks ${i - 7} bis ${i + 1}`, value: text })
+          fields.push({ name: `Als nächstes`, value: text })
           text = ""
+        } else if (i === server.songs.length - 1) {
+          fields.push({ name: `Als nächstes`, value: text })
         }
       }
     }
@@ -198,20 +200,19 @@ export async function queue(message: Discord.Message) {
   } else if (server.songs.length === 0) {
     await message.channel.send("Nichts in der queue")
   } else {
+    console.log(server.songs)
     const fields: Discord.EmbedFieldData[] = [{ name: "Aktueller Titel", value: `1) ${server.songs[0].title}` }]
     if (server.songs.length > 1) {
+      console.log("longer than 1")
       let text = ""
-      for (let i = 1; i < server.songs.length; i++) {
+      for (let i = 1; i < Math.min(10, server.songs.length); i++) {
         const song = server.songs[i]
+        console.log(song.title)
         const songTitle = `${i + 1}) ${song.title}`
         text += `${songTitle}\n`
-        if (i % 9 === 0) {
-          text += `...\nTotal: ${server.songs.length}`
-          fields.push({ name: `Tracks ${i - 7} bis ${i + 1}`, value: text })
-          text = ""
-          break
-        }
       }
+      text += `...\nTotal: ${server.songs.length}`
+      fields.push({ name: `Als nächstes`, value: text })
     }
     const queueMessage = new Discord.MessageEmbed()
       .setColor("#0099ff")
