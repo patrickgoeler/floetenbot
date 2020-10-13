@@ -22,6 +22,7 @@ export async function start(message: Discord.Message, args: string[]) {
   }
 
   const server = store.get(message.guild.id)
+
   if (args.length === 0) {
     if (server && server.connection && server.connection.dispatcher) {
       server.connection.dispatcher.resume()
@@ -122,7 +123,8 @@ export async function play(guildId: string, song: Song) {
     filter: "audioonly",
     opusEncoded: true,
     highWaterMark: 33554432,
-    encoderArgs: ["-af", "bass=g=15,dynaudnorm=f=200"],
+    // encoderArgs: ["-af", "bass=g=15,dynaudnorm=f=200"],
+    encoderArgs: ["-af", "bass=g=15"],
   })
   server.connection
     .play(stream, {
