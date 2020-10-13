@@ -43,11 +43,25 @@ export async function start(message: Discord.Message, args: string[]) {
       if (args[0].includes("spotify")) {
         // handle spotify
         const titles = await getSongQueries(args[0])
-        songs = [...titles.map((t) => ({ title: t }))]
+        const amount = Number(args[1])
+        if (amount && amount > 1) {
+          for (let i = 0; i < amount; i++) {
+            songs = [...titles.map((t) => ({ title: t }))]
+          }
+        } else {
+          songs = [...titles.map((t) => ({ title: t }))]
+        }
       } else if (args[0].includes("youtube")) {
         // play link directly
         const song = await getVideoInfo(args[0])
-        songs.push(song)
+        const amount = Number(args[1])
+        if (amount && amount > 1) {
+          for (let i = 0; i < amount; i++) {
+            songs.push(song)
+          }
+        } else {
+          songs.push(song)
+        }
       } else {
         await message.channel.send("Nur Youtube Links werden unterstützt du Mongo")
         message.channel.stopTyping()
