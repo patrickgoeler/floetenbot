@@ -1,6 +1,6 @@
 import Discord from "discord.js"
-import ytdl from "ytdl-core-discord"
-// import ytdl from "discord-ytdl-core"
+// import ytdl from "ytdl-core-discord"
+import ytdl from "discord-ytdl-core"
 import { getVideoInfo, getVideoUrl } from "../api/youtube"
 import logger from "../utils/logger"
 import { Server, Song, store } from ".."
@@ -133,17 +133,16 @@ export async function play(guildId: string, song: Song) {
     song.title = item.snippet.title
     song.url = `https://www.youtube.com/watch?v=${item.id.videoId}`
   }
-  const stream = await ytdl(song.url)
-  // const stream = ytdl(song.url, {
-  //   filter: "audioonly",
-  //   opusEncoded: true,
-  //   highWaterMark: 33554432,
-  //   encoderArgs: ["-af", "bass=g=15,dynaudnorm=g=301"],
-  // })
+  const stream = ytdl(song.url, {
+    filter: "audioonly",
+    opusEncoded: true,
+    highWaterMark: 33554432,
+    encoderArgs: ["-af", "bass=g=15,dynaudnorm=g=301"],
+  })
   server.connection
     .play(stream, {
       type: "opus",
-      // highWaterMark: 50,
+      highWaterMark: 50,
     })
     .on("finish", async () => {
       server.songs.shift()
