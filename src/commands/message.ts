@@ -149,9 +149,6 @@ export async function play(guildId: string, song: Song) {
   stream.on("end", () => {
     logger.error("STREAM ON end")
   })
-  stream.on("pause", () => {
-    logger.error("STREAM ON PAUSE")
-  })
   server.connection
     .play(stream, {
       type: "opus",
