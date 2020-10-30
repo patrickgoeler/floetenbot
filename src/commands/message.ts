@@ -139,6 +139,19 @@ export async function play(guildId: string, song: Song) {
     highWaterMark: 33554432,
     // encoderArgs: ["-af", "bass=g=15,dynaudnorm=g=301"],
   })
+  stream.on("error", (error) => {
+    logger.error("NEW ERROR LOOK AT THIS, STREAM ON ERROR")
+    logger.error(error)
+  })
+  stream.on("close", () => {
+    logger.error("STREAM ON CLOSE")
+  })
+  stream.on("end", () => {
+    logger.error("STREAM ON end")
+  })
+  stream.on("pause", () => {
+    logger.error("STREAM ON PAUSE")
+  })
   server.connection
     .play(stream, {
       type: "opus",
@@ -167,6 +180,12 @@ export async function play(guildId: string, song: Song) {
       play(guildId, server.songs[0])
     })
     .on("error", (error) => logger.error(error))
+    .on("close", () => {
+      logger.error("connection on close")
+    })
+    .on("debug", (info) => {
+      logger.error("DEBUG", info)
+    })
   await server.textChannel.send(`Los geht's mit ${song.title}`)
 }
 
