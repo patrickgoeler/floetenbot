@@ -1,6 +1,7 @@
 import Discord from "discord.js"
 import { TOKEN } from "./config"
 import { onMessage } from "./handlers/message"
+import { onVoiceStateUpdate } from "./handlers/voiceStateUpdate"
 import logger from "./utils/logger"
 
 export interface Server {
@@ -28,5 +29,7 @@ client.on("error", (m) => logger.log("error", m))
 process.on("uncaughtException", (error) => logger.log("error", error))
 
 client.on("message", onMessage)
+
+client.on("voiceStateUpdate", onVoiceStateUpdate)
 
 client.login(TOKEN)
