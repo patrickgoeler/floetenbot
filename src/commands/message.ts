@@ -166,6 +166,18 @@ export async function play(guildId: string, song: Song) {
     encoderArgs: ["-af", "bass=g=10,dynaudnorm=g=301"],
     dlChunkSize: 0,
   })
+    .on("close", () => {
+      console.log("current song", song)
+      console.log("ytdl stream closed")
+    })
+    .on("end", () => {
+      console.log("current song", song)
+      console.log("yctdl stream ended")
+    })
+    .on("error", (err: Error) => {
+      console.log("current song", song)
+      console.log("ytdl stream error", err.message)
+    })
 
   server.connection
     .play(stream, {
