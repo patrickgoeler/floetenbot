@@ -1,5 +1,10 @@
 import Discord from "discord.js"
-import ytdl from "ytdl-core-discord"
+// import ytdlDiscord from "ytdl-core-discord"
+// import fs from "fs"
+import path from "path"
+import ytdlRaw from "ytdl-core"
+import ffmpeg from "fluent-ffmpeg"
+import readline from "readline"
 import { getVideoInfo, getVideoUrl } from "../api/youtube"
 import logger from "../utils/logger"
 import { Server, Song, store } from ".."
@@ -132,26 +137,37 @@ export async function play(guildId: string, song: Song) {
     song.title = item.snippet.title
     song.url = `https://www.youtube.com/watch?v=${item.id.videoId}`
   }
-  const stream = await ytdl(song.url, {
-    filter: "audioonly",
-    // opusEncoded: true,
-    highWaterMark: 33554432,
-    // encoderArgs: ["-af", "bass=g=15,dynaudnorm=g=301"],
-  })
-  stream.on("error", (error) => {
-    logger.error("NEW ERROR LOOK AT THIS, STREAM ON ERROR")
-    logger.error(error)
-  })
-  stream.on("close", () => {
-    logger.error("STREAM ON CLOSE")
-  })
-  stream.on("end", () => {
-    logger.error("STREAM ON end")
+  const fileName = path.join(__dirname, `../../data/${song.title}.mp3`)
+  // const stream = ytdlRaw(song.url!, {
+  //   filter: "audioonly",
+  //   dlChunkSize: 0,
+  // })
+  // console.log(fileName)
+  // console.log(fs)
+  await new Promise((resolve) => {
+    console.log("starting download", song.url)
+    const startTime = Date.now()
+    const stream = ytdlRaw(song.url!, {
+      filter: "audioonly",
+      // dlChunkSize: 0,
+      quality: "highestaudio",
+    })
+    ffmpeg(stream)
+      .audioBitrate(128)
+      .save(fileName)
+      .on("progress", (p) => {
+        readline.cursorTo(process.stdout, 0)
+        process.stdout.write(`${p.targetSize}kb downloaded`)
+      })
+      .on("end", () => {
+        console.log(`\ndone, thanks - ${(Date.now() - startTime) / 1000}s`)
+        resolve()
+      })
   })
   server.connection
-    .play(stream, {
-      type: "opus",
-      highWaterMark: 50,
+    .play(fileName, {
+      // type: "opus",
+      // highWaterMark: 50,
     })
     .on("finish", async () => {
       server.songs.shift()
