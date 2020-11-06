@@ -1,6 +1,5 @@
 import Discord from "discord.js"
 import ytdl from "ytdl-core-discord"
-// import ytdl from "discord-ytdl-core"
 import { getVideoInfo, getVideoUrl } from "../api/youtube"
 import logger from "../utils/logger"
 import { Server, Song, store } from ".."
@@ -93,7 +92,7 @@ export async function start(message: Discord.Message, args: string[]) {
     store.set(message.guild.id, newServer)
     try {
       const connection = await voiceChannel.join()
-      connection.voice.setSelfDeaf(true)
+      connection.voice?.setSelfDeaf(true)
       newServer.connection = connection
       await play(message.guild.id, songs[0])
     } catch (error) {

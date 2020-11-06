@@ -1,5 +1,5 @@
 import axios from "axios"
-import ytdl from "discord-ytdl-core"
+import ytdl from "ytdl-core-discord"
 import { GOOGLE_TOKEN } from "../config"
 import { Item, YoutubeSearchResult } from "../types/youtube"
 import { Song } from ".."
