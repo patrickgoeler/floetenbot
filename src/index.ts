@@ -1,4 +1,5 @@
 import Discord from "discord.js"
+import express from "express"
 import { TOKEN } from "./config"
 import { onMessage } from "./handlers/message"
 import { onVoiceStateUpdate } from "./handlers/voiceStateUpdate"
@@ -33,3 +34,11 @@ client.on("message", onMessage)
 client.on("voiceStateUpdate", onVoiceStateUpdate)
 
 client.login(TOKEN)
+
+const app = express()
+app.get("/", (_, res) => {
+  return res.send("Ok")
+})
+app.listen(process.env.PORT, () => {
+  logger.info(`Running on ${process.env.PORT}`)
+})

@@ -8,6 +8,7 @@ import logger from "../utils/logger"
 export async function getVideoUrl(query: string): Promise<Item> {
   try {
     logger.info(query)
+    logger.info("Google token", GOOGLE_TOKEN)
     const { data } = await axios.get<YoutubeSearchResult>(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURI(query)}&key=${GOOGLE_TOKEN}`,
     )
