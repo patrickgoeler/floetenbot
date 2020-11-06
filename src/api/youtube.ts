@@ -1,6 +1,5 @@
 import axios from "axios"
-// import ytdlDiscord from "ytdl-core-discord"
-import ytdl from "ytdl-core"
+import ytdlDiscord from "discord-ytdl-core"
 import { GOOGLE_TOKEN } from "../config"
 import { Item, YoutubeSearchResult } from "../types/youtube"
 import { Song } from ".."
@@ -26,7 +25,7 @@ export async function getVideoUrl(query: string): Promise<Item> {
 
 export async function getVideoInfo(url: string): Promise<Song> {
   try {
-    const data = await ytdl.getInfo(url)
+    const data = await ytdlDiscord.getInfo(url)
     if (!data) {
       throw new Error("No item")
     }
