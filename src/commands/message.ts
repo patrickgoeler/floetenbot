@@ -1,8 +1,7 @@
 import Discord from "discord.js"
-// import ytdlDiscord from "ytdl-core-discord"
+import ytdlDiscord from "discord-ytdl-core"
 // import fs from "fs"
 // import path from "path"
-import ytdlRaw from "ytdl-core"
 // import ffmpeg from "fluent-ffmpeg"
 // import readline from "readline"
 import { getVideoInfo, getVideoUrl } from "../api/youtube"
@@ -161,15 +160,16 @@ export async function play(guildId: string, song: Song) {
   //   })
   // }
 
-  const stream = ytdlRaw(song.url!, {
+  const stream = ytdlDiscord(song.url!, {
     filter: "audioonly",
+    opusEncoded: true,
+    encoderArgs: ["-af", "bass=g=10,dynaudnorm=f=200"],
     dlChunkSize: 0,
-    quality: "highestaudio",
   })
 
   server.connection
     .play(stream, {
-      // type: "opus",
+      type: "opus",
       // highWaterMark: 50,
     })
     .on("finish", async () => {
