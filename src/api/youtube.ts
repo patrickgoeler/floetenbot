@@ -21,6 +21,38 @@ export async function getVideoUrl(query: string): Promise<Item> {
   }
 }
 
+export async function getHackyVideoId(query: string): Promise<{ id: string; name: string }> {
+  try {
+    const { data } = await axios.post(
+      `https://www.youtube.com/youtubei/v1/search?&key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8`,
+      {
+        context: {
+          client: {
+            clientName: "WEB",
+            clientVersion: "2.20201105.01.01",
+          },
+        },
+        query,
+      },
+    )
+    // beware, its a monster
+    const id =
+      data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]
+        ?.itemSectionRenderer?.contents?.[0]?.videoRenderer?.videoId
+    const name =
+      data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]
+        ?.itemSectionRenderer?.contents?.[0]?.videoRenderer?.title?.runs?.[0]?.text
+    if (id && name) {
+      return { id, name }
+    }
+    throw new Error("Malformed Response")
+  } catch (error) {
+    logger.error(error.message)
+    logger.error("CHECK HACKY YOUTUBE VIDEO ID GETTING")
+    return { id: "", name: "" }
+  }
+}
+
 export async function getVideoInfo(url: string): Promise<Song> {
   try {
     const data = await ytdlDiscord.getInfo(url)

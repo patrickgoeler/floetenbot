@@ -4,7 +4,7 @@ import ytdlDiscord from "discord-ytdl-core"
 // import path from "path"
 // import ffmpeg from "fluent-ffmpeg"
 // import readline from "readline"
-import { getVideoInfo, getVideoUrl } from "../api/youtube"
+import { getHackyVideoId, getVideoInfo } from "../api/youtube"
 import logger from "../utils/logger"
 import { Server, Song, store } from ".."
 import { getSongQueries, searchForTrack } from "../api/spotify"
@@ -72,10 +72,10 @@ export async function start(message: Discord.Message, args: string[]) {
       }
     } else {
       // normal search terms
-      const item = await getVideoUrl(args.join(" "))
+      const item = await getHackyVideoId(args.join(" "))
       const song: Song = {
-        title: item.snippet.title,
-        url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+        title: item.name,
+        url: `https://www.youtube.com/watch?v=${item.id}`,
       }
       songs.push(song)
     }
@@ -132,9 +132,9 @@ export async function play(guildId: string, song: Song) {
     return
   }
   if (!song.url) {
-    const item = await getVideoUrl(song.title)
-    song.title = item.snippet.title
-    song.url = `https://www.youtube.com/watch?v=${item.id.videoId}`
+    const item = await getHackyVideoId(song.title)
+    song.title = item.name
+    song.url = `https://www.youtube.com/watch?v=${item.id}`
   }
   // const fileName = path.join(__dirname, `../../data/${song.title}.mp3`)
   // if (!fs.existsSync(fileName)) {
