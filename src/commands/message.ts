@@ -1,6 +1,6 @@
 import Discord from "discord.js"
 // import ytdlDiscord from "ytdl-core-discord"
-// import fs from "fs"
+import fs from "fs"
 import path from "path"
 import ytdlRaw from "ytdl-core"
 import ffmpeg from "fluent-ffmpeg"
@@ -144,26 +144,29 @@ export async function play(guildId: string, song: Song) {
   // })
   // console.log(fileName)
   // console.log(fs)
-  await new Promise((resolve) => {
-    console.log("starting download", song.url)
-    const startTime = Date.now()
-    const stream = ytdlRaw(song.url!, {
-      filter: "audioonly",
-      // dlChunkSize: 0,
-      quality: "highestaudio",
+  if (!fs.existsSync(fileName)) {
+    await new Promise((resolve) => {
+      console.log("starting download", song.url)
+      const startTime = Date.now()
+      const stream = ytdlRaw(song.url!, {
+        filter: "audioonly",
+        // dlChunkSize: 0,
+        quality: "highestaudio",
+      })
+      ffmpeg(stream)
+        .audioBitrate(128)
+        .save(fileName)
+        .on("progress", (p) => {
+          readline.cursorTo(process.stdout, 0)
+          process.stdout.write(`${p.targetSize}kb downloaded`)
+        })
+        .on("end", () => {
+          console.log(`\ndone, thanks - ${(Date.now() - startTime) / 1000}s`)
+          resolve()
+        })
     })
-    ffmpeg(stream)
-      .audioBitrate(128)
-      .save(fileName)
-      .on("progress", (p) => {
-        readline.cursorTo(process.stdout, 0)
-        process.stdout.write(`${p.targetSize}kb downloaded`)
-      })
-      .on("end", () => {
-        console.log(`\ndone, thanks - ${(Date.now() - startTime) / 1000}s`)
-        resolve()
-      })
-  })
+  }
+
   server.connection
     .play(fileName, {
       // type: "opus",
