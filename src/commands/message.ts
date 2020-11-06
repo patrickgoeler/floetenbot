@@ -163,7 +163,7 @@ export async function play(guildId: string, song: Song) {
   const stream = ytdlDiscord(song.url!, {
     filter: "audioonly",
     opusEncoded: true,
-    encoderArgs: ["-af", "bass=g=10,dynaudnorm=f=200"],
+    encoderArgs: ["-af", "bass=g=10,dynaudnorm=g=301"],
     dlChunkSize: 0,
   })
 
