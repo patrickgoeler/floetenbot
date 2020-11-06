@@ -1,5 +1,4 @@
 import Discord from "discord.js"
-import express from "express"
 import { TOKEN } from "./config"
 import { onMessage } from "./handlers/message"
 import { onVoiceStateUpdate } from "./handlers/voiceStateUpdate"
