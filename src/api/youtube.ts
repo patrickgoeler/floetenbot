@@ -49,7 +49,9 @@ export async function getHackyVideoId(query: string): Promise<{ id: string; name
   } catch (error) {
     logger.error(error.message)
     logger.error("CHECK HACKY YOUTUBE VIDEO ID GETTING")
-    return { id: "", name: "" }
+    // try fallback
+    const item = await getVideoUrl(query)
+    return { id: item.id.videoId, name: item.snippet.title }
   }
 }
 
