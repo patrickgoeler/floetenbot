@@ -1,7 +1,10 @@
 import Discord from "discord.js"
-import ytdl from "ytdl-core-discord"
-// import ytdl from "discord-ytdl-core"
-import { getVideoInfo, getVideoUrl } from "../api/youtube"
+import ytdlDiscord from "discord-ytdl-core"
+// import fs from "fs"
+// import path from "path"
+// import ffmpeg from "fluent-ffmpeg"
+// import readline from "readline"
+import { getHackyVideoId, getVideoInfo } from "../api/youtube"
 import logger from "../utils/logger"
 import { Server, Song, store } from ".."
 import { getSongQueries, searchForTrack } from "../api/spotify"
@@ -69,10 +72,10 @@ export async function start(message: Discord.Message, args: string[]) {
       }
     } else {
       // normal search terms
-      const item = await getVideoUrl(args.join(" "))
+      const item = await getHackyVideoId(args.join(" "))
       const song: Song = {
-        title: item.snippet.title,
-        url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+        title: item.name,
+        url: `https://www.youtube.com/watch?v=${item.id}`,
       }
       songs.push(song)
     }
@@ -93,7 +96,7 @@ export async function start(message: Discord.Message, args: string[]) {
     store.set(message.guild.id, newServer)
     try {
       const connection = await voiceChannel.join()
-      connection.voice.setSelfDeaf(true)
+      connection.voice?.setSelfDeaf(true)
       newServer.connection = connection
       await play(message.guild.id, songs[0])
     } catch (error) {
@@ -120,7 +123,13 @@ export async function play(guildId: string, song: Song) {
   }
   if (!song) {
     // queue empty
-    server?.voiceChannel?.leave()
+    if (server.connection) {
+      if (server.connection.dispatcher) {
+        console.log("destroying dispatcher")
+        server.connection.dispatcher.destroy()
+      }
+      server.connection.disconnect()
+    }
     store.delete(guildId)
     return
   }
@@ -129,32 +138,60 @@ export async function play(guildId: string, song: Song) {
     return
   }
   if (!song.url) {
-    const item = await getVideoUrl(song.title)
-    song.title = item.snippet.title
-    song.url = `https://www.youtube.com/watch?v=${item.id.videoId}`
+    const item = await getHackyVideoId(song.title)
+    song.title = item.name
+    song.url = `https://www.youtube.com/watch?v=${item.id}`
   }
-  const stream = await ytdl(song.url, {
+  // const fileName = path.join(__dirname, `../../data/${song.title}.mp3`)
+  // if (!fs.existsSync(fileName)) {
+  //   await new Promise((resolve) => {
+  //     console.log("starting download", song.url)
+  //     const startTime = Date.now()
+  //     const stream = ytdlRaw(song.url!, {
+  //       filter: "audioonly",
+  //       // dlChunkSize: 0,
+  //       quality: "highestaudio",
+  //     })
+  //     ffmpeg(stream)
+  //       .audioBitrate(128)
+  //       .save(fileName)
+  //       .on("progress", (p) => {
+  //         readline.cursorTo(process.stdout, 0)
+  //         process.stdout.write(`${p.targetSize}kb downloaded`)
+  //       })
+  //       .on("end", () => {
+  //         console.log(`\ndone, thanks - ${(Date.now() - startTime) / 1000}s`)
+  //         resolve()
+  //       })
+  //   })
+  // }
+
+  const stream = ytdlDiscord(song.url!, {
     filter: "audioonly",
-    // opusEncoded: true,
-    highWaterMark: 33554432,
-    // encoderArgs: ["-af", "bass=g=15,dynaudnorm=g=301"],
+    opusEncoded: true,
+    encoderArgs: ["-af", "bass=g=10,dynaudnorm=g=301"],
+    dlChunkSize: 0,
   })
-  stream.on("error", (error) => {
-    logger.error("NEW ERROR LOOK AT THIS, STREAM ON ERROR")
-    logger.error(error)
-  })
-  stream.on("close", () => {
-    logger.error("STREAM ON CLOSE")
-    stream.destroy()
-  })
-  stream.on("end", () => {
-    logger.error("STREAM ON end")
-    stream.destroy()
-  })
+    .on("close", () => {
+      console.log("current song", song)
+      console.log("ytdl stream closed")
+      stream.destroy()
+    })
+    .on("end", () => {
+      console.log("current song", song)
+      console.log("yctdl stream ended")
+      stream.destroy()
+    })
+    .on("error", (err: Error) => {
+      console.log("current song", song)
+      console.log("ytdl stream error", err.message)
+      stream.destroy()
+    })
+
   server.connection
     .play(stream, {
       type: "opus",
-      highWaterMark: 50,
+      // highWaterMark: 50,
     })
     .on("finish", async () => {
       stream.destroy()
@@ -184,6 +221,8 @@ export async function play(guildId: string, song: Song) {
       stream.destroy()
     })
     .on("close", () => {
+      console.log("destroying stream")
+      stream.destroy()
       logger.error("connection on close")
       stream.destroy()
     })
@@ -198,9 +237,16 @@ export async function stop(message: Discord.Message) {
     await message.channel.send("Du befindest dich nicht in einem Voice Channel du Mongo")
     return
   }
+  // BIG FAT TODO:
+  // this does not end the dispatcher or something, playing and stopping often fills up the memory
   const server = store.get(message.guild?.id as string) as Server
-  server.songs = []
-  await server.voiceChannel.leave()
+  if (server.connection) {
+    if (server.connection.dispatcher) {
+      console.log("destroying dispatcher")
+      server.connection.dispatcher.destroy()
+    }
+    server.connection.disconnect()
+  }
   store.delete(message.guild?.id as string)
   await message.react("🟥")
 }
@@ -231,9 +277,16 @@ export async function skip(message: Discord.Message) {
 
 export async function leave(message: Discord.Message) {
   const server = store.get(message.guild?.id as string) as Server
+  if (server.connection) {
+    if (server.connection.dispatcher) {
+      console.log("destroying dispatcher")
+      server.connection.dispatcher.destroy()
+    }
+    server.connection.disconnect()
+  }
   if (server.voiceChannel) {
-    store.delete(message.guild?.id as string)
     await server.voiceChannel.leave()
+    store.delete(message.guild?.id as string)
     await message.react("👋")
   }
 }
