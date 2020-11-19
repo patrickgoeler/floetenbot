@@ -211,6 +211,8 @@ export async function play(guildId: string, song: Song) {
     })
     .on("error", (error) => logger.error(error))
     .on("close", () => {
+      console.log("destroying stream")
+      stream.destroy()
       logger.error("connection on close")
     })
     .on("debug", (info) => {
@@ -229,6 +231,7 @@ export async function stop(message: Discord.Message) {
   const server = store.get(message.guild?.id as string) as Server
   if (server.connection) {
     if (server.connection.dispatcher) {
+      console.log("destroying dispatcher")
       server.connection.dispatcher.destroy()
     }
     server.connection.disconnect()
