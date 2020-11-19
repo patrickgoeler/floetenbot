@@ -123,7 +123,13 @@ export async function play(guildId: string, song: Song) {
   }
   if (!song) {
     // queue empty
-    server?.voiceChannel?.leave()
+    if (server.connection) {
+      if (server.connection.dispatcher) {
+        console.log("destroying dispatcher")
+        server.connection.dispatcher.destroy()
+      }
+      server.connection.disconnect()
+    }
     store.delete(guildId)
     return
   }
