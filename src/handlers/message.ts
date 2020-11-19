@@ -46,7 +46,7 @@ export async function onMessage(message: Discord.Message): Promise<any> {
   } catch (error) {
     logger.error(error)
     message.channel.startTyping()
-    await message.channel.send("Error Holger fix")
+    await message.channel.send("Oops, something went wrong")
     message.channel.stopTyping()
     const server = store.get(message.guild?.id as string) as Server
     if (server.voiceChannel) {
