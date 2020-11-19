@@ -266,9 +266,16 @@ export async function skip(message: Discord.Message) {
 
 export async function leave(message: Discord.Message) {
   const server = store.get(message.guild?.id as string) as Server
+  if (server.connection) {
+    if (server.connection.dispatcher) {
+      console.log("destroying dispatcher")
+      server.connection.dispatcher.destroy()
+    }
+    server.connection.disconnect()
+  }
   if (server.voiceChannel) {
-    store.delete(message.guild?.id as string)
     await server.voiceChannel.leave()
+    store.delete(message.guild?.id as string)
     await message.react("👋")
   }
 }
