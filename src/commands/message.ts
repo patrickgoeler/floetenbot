@@ -145,9 +145,11 @@ export async function play(guildId: string, song: Song) {
   })
   stream.on("close", () => {
     logger.error("STREAM ON CLOSE")
+    stream.destroy()
   })
   stream.on("end", () => {
     logger.error("STREAM ON end")
+    stream.destroy()
   })
   server.connection
     .play(stream, {
@@ -155,6 +157,7 @@ export async function play(guildId: string, song: Song) {
       highWaterMark: 50,
     })
     .on("finish", async () => {
+      stream.destroy()
       server.songs.shift()
       if (!server.songs[0] && server.connection) {
         console.log("getting recommends because last song")
@@ -176,9 +179,13 @@ export async function play(guildId: string, song: Song) {
       }
       play(guildId, server.songs[0])
     })
-    .on("error", (error) => logger.error(error))
+    .on("error", (error) => {
+      logger.error(error)
+      stream.destroy()
+    })
     .on("close", () => {
       logger.error("connection on close")
+      stream.destroy()
     })
     .on("debug", (info) => {
       logger.error("DEBUG", info)
