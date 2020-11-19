@@ -169,14 +169,17 @@ export async function play(guildId: string, song: Song) {
     .on("close", () => {
       console.log("current song", song)
       console.log("ytdl stream closed")
+      stream.destroy()
     })
     .on("end", () => {
       console.log("current song", song)
       console.log("yctdl stream ended")
+      stream.destroy()
     })
     .on("error", (err: Error) => {
       console.log("current song", song)
       console.log("ytdl stream error", err.message)
+      stream.destroy()
     })
 
   server.connection
@@ -221,9 +224,15 @@ export async function stop(message: Discord.Message) {
     await message.channel.send("Du befindest dich nicht in einem Voice Channel du Mongo")
     return
   }
+  // BIG FAT TODO:
+  // this does not end the dispatcher or something, playing and stopping often fills up the memory
   const server = store.get(message.guild?.id as string) as Server
-  server.songs = []
-  await server.voiceChannel.leave()
+  if (server.connection) {
+    if (server.connection.dispatcher) {
+      server.connection.dispatcher.destroy()
+    }
+    server.connection.disconnect()
+  }
   store.delete(message.guild?.id as string)
   await message.react("🟥")
 }
