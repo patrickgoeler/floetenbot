@@ -169,7 +169,7 @@ export async function play(guildId: string, song: Song) {
   const stream = ytdlDiscord(song.url!, {
     filter: "audioonly",
     opusEncoded: true,
-    encoderArgs: ["-af", "bass=g=10,dynaudnorm=g=301"],
+    encoderArgs: ["-af", "dynaudnorm=g=301"],
     dlChunkSize: 0,
   })
     .on("close", () => {
@@ -195,6 +195,7 @@ export async function play(guildId: string, song: Song) {
     })
     .on("finish", async () => {
       stream.destroy()
+      server.connection?.dispatcher.destroy()
       server.songs.shift()
       if (!server.songs[0] && server.connection) {
         console.log("getting recommends because last song")
@@ -218,13 +219,14 @@ export async function play(guildId: string, song: Song) {
     })
     .on("error", (error) => {
       logger.error(error)
+      server.connection?.dispatcher.destroy()
       stream.destroy()
     })
     .on("close", () => {
       console.log("destroying stream")
-      stream.destroy()
       logger.error("connection on close")
       stream.destroy()
+      server.connection?.dispatcher.destroy()
     })
     .on("debug", (info) => {
       logger.error("DEBUG", info)
