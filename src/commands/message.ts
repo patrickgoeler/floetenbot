@@ -169,33 +169,28 @@ export async function play(guildId: string, song: Song) {
   const stream = ytdlDiscord(song.url!, {
     filter: "audioonly",
     opusEncoded: true,
-    encoderArgs: ["-af", "dynaudnorm=g=301"],
     dlChunkSize: 0,
   })
     .on("close", () => {
-      console.log("current song", song)
       console.log("ytdl stream closed")
-      stream.destroy()
+      stream?.destroy()
     })
     .on("end", () => {
-      console.log("current song", song)
       console.log("yctdl stream ended")
-      stream.destroy()
+      stream?.destroy()
     })
     .on("error", (err: Error) => {
-      console.log("current song", song)
       console.log("ytdl stream error", err.message)
-      stream.destroy()
+      stream?.destroy()
     })
 
   server.connection
     .play(stream, {
       type: "opus",
-      // highWaterMark: 50,
     })
     .on("finish", async () => {
-      stream.destroy()
-      server.connection?.dispatcher.destroy()
+      stream?.destroy()
+      server.connection?.dispatcher?.destroy()
       server.songs.shift()
       if (!server.songs[0] && server.connection) {
         console.log("getting recommends because last song")
@@ -219,14 +214,14 @@ export async function play(guildId: string, song: Song) {
     })
     .on("error", (error) => {
       logger.error(error)
-      server.connection?.dispatcher.destroy()
-      stream.destroy()
+      server.connection?.dispatcher?.destroy()
+      stream?.destroy()
     })
     .on("close", () => {
       console.log("destroying stream")
       logger.error("connection on close")
-      stream.destroy()
-      server.connection?.dispatcher.destroy()
+      stream?.destroy()
+      server.connection?.dispatcher?.destroy()
     })
     .on("debug", (info) => {
       logger.error("DEBUG", info)
@@ -239,8 +234,6 @@ export async function stop(message: Discord.Message) {
     await message.channel.send("Du befindest dich nicht in einem Voice Channel du Mongo")
     return
   }
-  // BIG FAT TODO:
-  // this does not end the dispatcher or something, playing and stopping often fills up the memory
   const server = store.get(message.guild?.id as string) as Server
   if (server.connection) {
     if (server.connection.dispatcher) {
