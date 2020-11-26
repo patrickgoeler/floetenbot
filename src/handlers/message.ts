@@ -1,6 +1,6 @@
 import Discord from "discord.js"
 import { Server, store } from ".."
-import { jump, leave, pause, queue, queueFull, skip, start, stop } from "../commands/message"
+import { help, jump, queue, skip, start, stop } from "../commands/message"
 import { PREFIX } from "../config"
 import logger from "../utils/logger"
 
@@ -20,20 +20,8 @@ export async function onMessage(message: Discord.Message): Promise<any> {
       await stop(message)
     }
 
-    if (command === "pause") {
-      await pause(message)
-    }
-
-    if (command === "leave") {
-      await leave(message)
-    }
-
     if (command === "skip") {
       await skip(message)
-    }
-
-    if (command === "queue_full") {
-      await queueFull(message)
     }
 
     if (command === "queue") {
@@ -42,6 +30,10 @@ export async function onMessage(message: Discord.Message): Promise<any> {
 
     if (command === "jump") {
       await jump(message, args)
+    }
+
+    if (command === "help") {
+      await help(message)
     }
   } catch (error) {
     logger.error(error)
