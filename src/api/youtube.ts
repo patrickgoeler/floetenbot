@@ -36,12 +36,18 @@ export async function getHackyVideoId(query: string): Promise<{ id: string; name
       },
     )
     // beware, its a monster
-    const id =
+    const contents =
       data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]
-        ?.itemSectionRenderer?.contents?.[0]?.videoRenderer?.videoId
-    const name =
-      data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]
-        ?.itemSectionRenderer?.contents?.[0]?.videoRenderer?.title?.runs?.[0]?.text
+        ?.itemSectionRenderer?.contents
+    const videoRenderer = contents?.find((e: any) => !!e.videoRenderer)?.videoRenderer
+    const id = videoRenderer?.videoId
+    const name = videoRenderer?.title?.runs?.[0]?.text
+    // const id =
+    //   data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]
+    //     ?.itemSectionRenderer?.contents?.[0]?.videoRenderer?.videoId
+    // const name =
+    //   data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]
+    //     ?.itemSectionRenderer?.contents?.[0]?.videoRenderer?.title?.runs?.[0]?.text
     if (id && name) {
       return { id, name }
     }
