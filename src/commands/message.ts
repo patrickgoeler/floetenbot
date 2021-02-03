@@ -8,6 +8,30 @@ import { getHackyVideoId, getVideoInfo } from "../api/youtube"
 import logger from "../utils/logger"
 import { Server, Song, store } from ".."
 import { getSongQueries, searchForTrack } from "../api/spotify"
+import { shuffleArray } from "../utils/utils"
+
+export async function shuffle(message: Discord.Message) {
+  message.channel.startTyping()
+
+  const voiceChannel = message.member?.voice.channel
+  if (!voiceChannel) {
+    await message.channel.send("Du befindest dich nicht in einem Voice Channel du Mongo")
+    message.channel.stopTyping()
+    return
+  }
+  if (!message.guild) {
+    await message.channel.send("Gilde nicht definiert")
+    message.channel.stopTyping()
+    return
+  }
+
+  const server = store.get(message.guild.id)
+  if (server && server.songs && server.songs.length > 1) {
+    shuffleArray(server.songs)
+  }
+  message.channel.stopTyping()
+  await message.react("🔀")
+}
 
 export async function start(message: Discord.Message, args: string[]) {
   message.channel.startTyping()

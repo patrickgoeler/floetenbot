@@ -1,6 +1,6 @@
 import Discord from "discord.js"
 import { Server, store } from ".."
-import { help, jump, queue, skip, start, stop } from "../commands/message"
+import { help, jump, queue, shuffle, skip, start, stop } from "../commands/message"
 import { PREFIX } from "../config"
 import logger from "../utils/logger"
 
@@ -14,6 +14,10 @@ export async function onMessage(message: Discord.Message): Promise<any> {
 
     if (command === "play") {
       await start(message, args)
+    }
+
+    if (command === "shuffle") {
+      await shuffle(message)
     }
 
     if (command === "stop") {
