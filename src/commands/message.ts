@@ -171,17 +171,18 @@ export async function play(guildId: string, song: Song) {
     filter: "audioonly",
     opusEncoded: true,
     dlChunkSize: 0,
+    encoderArgs: ["-af", "bass=g=3"],
   })
     .on("close", () => {
-      console.log("ytdl stream closed")
+      logger.info(`ytdl stream closed for song: ${song.title}`)
       stream?.destroy()
     })
     .on("end", () => {
-      console.log("yctdl stream ended")
+      logger.info(`ytdl stream ended for song: ${song.title}`)
       stream?.destroy()
     })
     .on("error", (err: Error) => {
-      console.log("ytdl stream error", err.message)
+      logger.error("ytdl stream error", err.message)
       stream?.destroy()
     })
 
@@ -219,13 +220,9 @@ export async function play(guildId: string, song: Song) {
       stream?.destroy()
     })
     .on("close", () => {
-      console.log("destroying stream")
-      logger.error("connection on close")
+      logger.info("connection on close")
       stream?.destroy()
       server.connection?.dispatcher?.destroy()
-    })
-    .on("debug", (info) => {
-      logger.error("DEBUG", info)
     })
   await server.textChannel.send(`Los geht's mit ${song.title}`)
 }
