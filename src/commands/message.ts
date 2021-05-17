@@ -78,7 +78,7 @@ export async function start(message: Discord.Message, args: string[]) {
         } else {
           songs = [...titles.map((t) => ({ title: t }))]
         }
-      } else if (args[0].includes("youtube")) {
+      } else if (args[0].includes("youtu")) {
         // play link directly
         const song = await getVideoInfo(args[0])
         const amount = Number(args[1])
