@@ -33,4 +33,6 @@ process.on("uncaughtException", (error) => logger.log("error", error))
 
 client.on("message", onMessage)
 
+// client.on("voiceStateUpdate", onVoiceStateUpdate)
+
 client.login(TOKEN)

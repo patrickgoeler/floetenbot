@@ -182,7 +182,8 @@ export async function play(guildId: string, song: Song) {
       stream?.destroy()
     })
     .on("error", (err: Error) => {
-      logger.error("ytdl stream error", err.message)
+      logger.error(`ytdl stream error ${err.message}`)
+      console.log(err)
       stream?.destroy()
     })
 
@@ -215,7 +216,8 @@ export async function play(guildId: string, song: Song) {
       play(guildId, server.songs[0])
     })
     .on("error", (error) => {
-      logger.error(error)
+      logger.error(`dispatcher error ${error.message}`)
+      console.log(error)
       server.connection?.dispatcher?.destroy()
       stream?.destroy()
     })
