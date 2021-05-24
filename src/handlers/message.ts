@@ -20,6 +20,10 @@ export async function onMessage(message: Discord.Message): Promise<any> {
       await start(message, ["https://open.spotify.com/playlist/37i9dQZF1DX0SM0LYsmbMT?si=7a2592fa99814c6b"])
     }
 
+    if (command === "metal") {
+      await start(message, ["https://open.spotify.com/playlist/37i9dQZF1DWTcqUzwhNmKv?si=7cc575bce32a40e3"])
+    }
+
     if (command === "shuffle") {
       await shuffle(message)
     }

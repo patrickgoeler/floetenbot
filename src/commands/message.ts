@@ -50,15 +50,6 @@ export async function start(message: Discord.Message, args: string[]) {
 
   const server = store.get(message.guild.id)
 
-  if (args.length === 0) {
-    if (server && server.connection && server.connection.dispatcher) {
-      server.connection.dispatcher.resume()
-    } else {
-      await message.channel.send("Gib 2. Parameter du Mongo")
-    }
-    message.channel.stopTyping()
-    return
-  }
   // eslint-disable-next-line no-useless-escape
   const urlRegex = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)?/gi
 
@@ -137,6 +128,7 @@ export async function start(message: Discord.Message, args: string[]) {
       message.channel.send(`${songs[0].title} ist jetzt in der queue`)
     }
   }
+  await message.react("▶")
   message.channel.stopTyping()
 }
 
@@ -145,6 +137,7 @@ export async function play(guildId: string, song: Song) {
   if (!server) {
     return
   }
+  server.textChannel.startTyping()
   if (!song) {
     // queue empty
     if (server.connection) {
@@ -171,20 +164,17 @@ export async function play(guildId: string, song: Song) {
     filter: "audioonly",
     opusEncoded: true,
     dlChunkSize: 0,
-    encoderArgs: ["-af", "bass=g=3"],
+    encoderArgs: ["-af", "bass=g=4"],
   })
     .on("close", () => {
+      // close is always called regardless whether error or end
       logger.info(`ytdl stream closed for song: ${song.title}`)
-      stream?.destroy()
     })
     .on("end", () => {
       logger.info(`ytdl stream ended for song: ${song.title}`)
-      stream?.destroy()
     })
     .on("error", (err: Error) => {
       logger.error(`ytdl stream error ${err.message}`)
-      console.log(err)
-      stream?.destroy()
     })
 
   server.connection
@@ -192,41 +182,45 @@ export async function play(guildId: string, song: Song) {
       type: "opus",
     })
     .on("finish", async () => {
-      stream?.destroy()
-      server.connection?.dispatcher?.destroy()
-      server.songs.shift()
-      if (!server.songs[0] && server.connection) {
-        console.log("getting recommends because last song")
-        try {
-          const recommendations = await searchForTrack(song.title)
-
-          if (!recommendations) {
-            await server.textChannel.send(`Ich habe leider keine Auto play Vorschläge für ${song.title} gefunden`)
-          } else {
-            for (let i = 0; i < recommendations.length; i++) {
-              const recommendation = recommendations[i]
-              server.songs.push({ title: `${recommendation.artists![0].name} - ${recommendation.name}` })
-            }
-            await server.textChannel.send(`Auto play: ${recommendations.length} neue Lieder sind in der Schlange`)
-          }
-        } catch (error) {
-          logger.error(error)
-        }
-      }
-      play(guildId, server.songs[0])
+      logger.info("connection on finish")
+      await onFinish(stream, server, song, guildId)
     })
-    .on("error", (error) => {
-      logger.error(`dispatcher error ${error.message}`)
-      console.log(error)
-      server.connection?.dispatcher?.destroy()
-      stream?.destroy()
+    .on("error", async (error) => {
+      logger.error(`connection error ${error.message}`)
+      await onFinish(stream, server, song, guildId)
     })
     .on("close", () => {
+      // close is always called, regardless whether finish or error
       logger.info("connection on close")
-      stream?.destroy()
-      server.connection?.dispatcher?.destroy()
     })
   await server.textChannel.send(`Los geht's mit ${song.title}`)
+  server.textChannel.stopTyping()
+}
+
+// cant get stream type sadly
+async function onFinish(stream: any, server: Server, song: Song, guildId: string) {
+  stream?.destroy()
+  server.connection?.dispatcher?.destroy()
+  server.songs.shift()
+  if (!server.songs[0] && server.connection) {
+    console.log("getting recommends because last song")
+    try {
+      const recommendations = await searchForTrack(song.title)
+
+      if (!recommendations) {
+        await server.textChannel.send(`Ich habe leider keine Auto play Vorschläge für ${song.title} gefunden`)
+      } else {
+        for (let i = 0; i < recommendations.length; i++) {
+          const recommendation = recommendations[i]
+          server.songs.push({ title: `${recommendation.artists![0].name} - ${recommendation.name}` })
+        }
+        await server.textChannel.send(`Auto play: ${recommendations.length} neue Lieder sind in der Schlange`)
+      }
+    } catch (error) {
+      logger.error(error)
+    }
+  }
+  play(guildId, server.songs[0])
 }
 
 export async function stop(message: Discord.Message) {
@@ -258,6 +252,7 @@ export async function skip(message: Discord.Message) {
   }
   // ending current dispatcher triggers the on end hook which plays the next song
   server.connection?.dispatcher.end()
+  await message.react("⏭")
 }
 
 export async function queue(message: Discord.Message) {
@@ -312,6 +307,7 @@ export async function jump(message: Discord.Message, args: string[]) {
     // so if we only jump one ahead it splices (0, 0) and it is handled like a skip
     server.songs.splice(0, position - 2)
     server.connection?.dispatcher.end()
+    await message.react("🦘")
   }
 }
 
