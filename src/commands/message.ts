@@ -161,10 +161,11 @@ export async function play(guildId: string, song: Song) {
   }
 
   const stream = ytdlDiscord(song.url!, {
-    filter: "audioonly",
+    // filter: "audioonly",
+    quality: "highestaudio",
     opusEncoded: true,
-    dlChunkSize: 0,
-    encoderArgs: ["-af", "bass=g=4"],
+    // dlChunkSize: 0,
+    // encoderArgs: ["-af", "bass=g=3"],
   })
     .on("close", () => {
       // close is always called regardless whether error or end
@@ -180,6 +181,7 @@ export async function play(guildId: string, song: Song) {
   server.connection
     .play(stream, {
       type: "opus",
+      bitrate: 92000,
     })
     .on("finish", async () => {
       logger.info("connection on finish")
