@@ -32,7 +32,7 @@ export async function onMessage(message: Discord.Message): Promise<any> {
       await stop(message)
     }
 
-    if (command === "skip") {
+    if (command === "skip" || command === "next") {
       await skip(message)
     }
 
